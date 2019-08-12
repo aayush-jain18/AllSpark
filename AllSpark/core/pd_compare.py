@@ -92,7 +92,8 @@ class Compare:
 
     @left.setter
     def left(self, left):
-        """Check that it is a dataframe and has the join columns"""
+        """Check left dataframe is a instance of pd.DataFrame and has the all
+        the key columns"""
         self._left = left
         self._validate_dataframe("left")
 
@@ -102,7 +103,8 @@ class Compare:
 
     @right.setter
     def right(self, right):
-        """Check that it is a dataframe and has the join columns"""
+        """Check right dataframe is a instance of pd.DataFrame and has the all
+        the key columns"""
         self._right = right
         self._validate_dataframe("right")
 
@@ -166,14 +168,49 @@ class Compare:
 
     @staticmethod
     def count_notna(col):
+        """
+        Return the count of not null values in a pd.Series or a column in pd.DataFrame.
+
+        Parameters
+        ----------
+        col : pd.Series or pd.DataFrame[column]
+
+        Returns
+        -------
+        int
+        """
         return sum(col.notna())
 
     @staticmethod
     def compare_timeseries_column(col1, col2):
+        """
+        Compare and return absolute differences in times between two datetime
+        type pd.Series or pd.DataFrame[column].
+
+        Parameters
+        ----------
+        col1, col2: pd.Series or pd.DataFrame[column]
+
+        Returns
+        -------
+        timedelta series
+        """
         return col1 - col2
 
     @staticmethod
     def compare_object_columns(col1, col2):
+        """
+        Compare and returns diff between two pd.Series/pd.DataFrame[column]
+        of dtype object.
+
+        Parameters
+        ----------
+        col1, col2: pd.Series or pd.DataFrame[column]
+
+        Returns
+        -------
+        diff series
+        """
         diff = np.full(col2.size, np.nan, dtype='O')
         for index, row in enumerate(zip(col1, col2)):
             if row[0] != row[1]:
@@ -186,6 +223,27 @@ class Compare:
 
     @staticmethod
     def compare_numeric_columns(col1, col2, atol=0, rtol=0):
+        """
+        Returns a boolean array where absolute difference between two arrays
+        element-wise compared within a tolerance.
+        The tolerance values are positive, typically very small numbers.  The
+        relative difference (`rtol` * abs(`b`)) and the absolute difference
+        `atol` are added together to compare against the absolute difference
+        between `a` and `b`.
+        .. warning:: The default `atol` is not appropriate for comparing numbers
+                     that are much smaller than one.
+        Parameters
+        ----------
+        col1, col2: pd.Series or pd.DataFrame[column]
+        atol : float
+            The absolute tolerance parameter.
+        rtol : float
+            The relative tolerance parameter.
+
+        Returns
+        -------
+        numeric difference
+        """
         diff = pd.Series()
         if_num_diff = pd.Series(np.isclose(col1, col2, rtol=rtol, atol=atol,
                                            equal_nan=True))
