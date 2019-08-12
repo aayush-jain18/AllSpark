@@ -1,12 +1,12 @@
-<a href="https://github.com/aayush-jain18/AllSpark"><img src="file:///C:/Users/Aayush%20Jain/Downloads/allspark.png" height="60px" /></a>
+<a href="https://github.com/aayush-jain18/AllSpark"><img src="docs/image/allspark.png" height="60px" /></a>
 =========================================================================================================================================
 AllSpark is a cli and api ready diff tool to compare differences between two structured datasets.
 
 AllSpark lets you:
 
-   - Compare structured datasets  various formats
-   - Compare descriptive statistic between datasets
-   - Test your ETL flows 
+  - Compare structured datasets various formats
+  - Compare descriptive statistic between datasets
+  - Test your ETL flows 
  
  ## Getting Started
 
@@ -23,7 +23,7 @@ stated in [requirements.txt](requirements.txt)
   git clone https://github.com/aayush-jain18/AllSpark.git
   ```
   - cd to the installation directory AllSpark-master and create a 
-    virtualenv to isolate project requirements
+   virtualenv to isolate project requirements
   ```
   python -m venv dev
   source dev/bin/activate
