@@ -3,6 +3,5 @@ class Constants:
     IF_DUPLICATE_KEY_METHODS = ('drop', 'sort', 'aggregate')
     IF_DUPLICATE_ROWS = ('drop', None)
     METADATA_COLUMNS = ['column', 'left_column','left_count', 'right_column', 'right_count', 'diff_column', 'diff_count']
-    METADATA_COLUMNS_DTYPES = ['int64', 'int64', 'int64', 'object']
 
 
