@@ -10,11 +10,11 @@ pwd = path.abspath(local_path)
 
 
 def version():
-    with open(pwd + '/xray/__version__.py', 'r') as ver:
+    with open(pwd + '/AllSpark/__version__.py', 'r') as ver:
         for line in ver.readlines():
             if line.startswith('version ='):
                 return line.split(' = ')[-1].strip()[1:-1]
-    raise ValueError('No version found in xray/version.py')
+    raise ValueError('No version found in AllSpark/version.py')
 
 
 def read(fname):
@@ -32,9 +32,9 @@ with open(path.join(pwd, 'README.md'), encoding='utf-8') as f:
     long_description = f.read()
 
 setup(
-    name='xray',
+    name='AllSpark',
     version=version(),
-    description='Xray is a cli and api ready diff tool to compare differences '
+    description='AllSpark is a cli and api ready diff tool to compare differences '
                 'between two structured datasets.',
     author='Aayush Jain',
     author_email='aayushj1811@gmail.com',
@@ -43,10 +43,10 @@ setup(
     keywords='pandas ETL',
     long_description=long_description,
     long_description_content_type='text/markdown',
-    url='https://github.com/aayush-jain18/xray',
-    packages=['xray'],
+    url='https://github.com/aayush-jain18/AllSpark',
+    packages=['AllSpark'],
     install_requires=read_reqs('requirements.txt'),
-    entry_points={'console_scripts': ['xray = xray.cli:xray']},
+    entry_points={'console_scripts': ['AllSpark = AllSpark.cli:AllSpark']},
     classifiers=[
         'Intended Audience :: Developers',
         'Intended Audience :: Data Engineers',

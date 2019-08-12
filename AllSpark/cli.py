@@ -3,8 +3,8 @@ import sys
 import logging
 
 import click
-from xray.core.pd_compare import Compare
-from xray.constants import Constants
+from AllSpark.core.pd_compare import Compare
+from AllSpark.constants import Constants
 
 
 @click.command()
