@@ -261,7 +261,7 @@ class Compare:
             self.diff['rows_present'] = self.comd_df.loc[:, 'rows_present']
             self.diff = self.diff.append(self._missing_rows.loc[:, self.diff.columns], )
         self.mtdt_df.set_index('column', inplace=True)
-        # TODO: Remove the rows where there is no diffs
+        # Remove the rows where there is no diffs
         rows_without_diff = ~self.diff_rows.apply(any, axis=1)
         self.diff.drop(self.diff_rows[rows_without_diff].index, inplace=True)
 
