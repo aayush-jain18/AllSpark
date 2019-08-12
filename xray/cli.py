@@ -33,11 +33,3 @@ if __name__ == '__main__':
     logging.basicConfig(format=Constants.LOG_FORMAT,
                         level=logging.INFO)
     main()
-
-# subprocess.call(['bash', '-c',
-#     'comm -23 <(sort "$1") <(sort "$2") >"$3"', '_',
-#     infile1_name, infile2_name, outfile_name])
-# 52.2 ms
-# 44.5 ms
-# 41.8 ms
-# 47.3 ms
