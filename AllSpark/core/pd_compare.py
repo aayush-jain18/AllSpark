@@ -1,7 +1,9 @@
+import os
 import logging
 
-import pandas as pd
 import numpy as np
+import pandas as pd
+from sqlalchemy import create_engine
 
 from ..constants import Constants
 
@@ -164,7 +166,7 @@ class Compare:
 
     @staticmethod
     def get_diff_row(diff):
-        return pd.Series(~diff.isin([0, np.nan]))
+        return diff.notnull()
 
     @staticmethod
     def count_notna(col):
@@ -213,12 +215,16 @@ class Compare:
         """
         diff = np.full(col2.size, np.nan, dtype='O')
         for index, row in enumerate(zip(col1, col2)):
+            either_nan = ((row[0] == np.nan) | (row[1] == np.nan))
             if row[0] != row[1]:
-                try:
-                    float_diff = float(row[0]) - float(row[1])
-                    diff[index] = float_diff
-                except ValueError:
-                    diff[index] = True
+                if either_nan:
+                    diff[index] = Constants.DIFF_TRUE
+                else:
+                    try:
+                        float_diff = float(row[0]) - float(row[1])
+                        diff[index] = float_diff
+                    except ValueError:
+                        diff[index] = Constants.DIFF_TRUE
         return pd.Series(diff, index=col1.index)
 
     @staticmethod
@@ -244,26 +250,30 @@ class Compare:
         -------
         numeric difference
         """
-        diff = pd.Series()
+        diff = np.full(col1.size, np.nan, dtype='O')
         if_num_diff = pd.Series(np.isclose(col1, col2, rtol=rtol, atol=atol,
                                            equal_nan=True))
         if not all(if_num_diff):
-            if (atol == 0) and (rtol == 0):
-                diff = col1 - col2
-            else:
-                diff = [col1[index] - col2[index] if not boolean else 0
-                        for index, boolean in enumerate(if_num_diff)]
-        return diff
+            for index, same in if_num_diff.iteritems():
+                if same:
+                    diff[index] = np.nan
+                elif (col1[index] == np.nan) | (col2[index] == np.nan):
+                    diff[index] = Constants.DIFF_TRUE
+                else:
+                    diff[index] = col1[index] - col2[index]
+        return pd.Series(diff, index=col1.index)
 
     def _extra_columns(self, side, columns):
         self.diff[side + '_missing_columns'] = ', '.join(columns)
         for column in columns:
             if side == self.lsuffix:
                 self.mtdt_df = self.mtdt_df.append(
-                    {'column': column, 'left_column': column}, ignore_index=True)
+                    {'column': column, 'column_present': self.lsuffix,
+                     'left_column': column}, ignore_index=True)
             elif side == self.rsuffix:
                 self.mtdt_df = self.mtdt_df.append(
-                    {'column': column, 'right_column': column}, ignore_index=True)
+                    {'column': column, 'column_present': self.rsuffix,
+                     'right_column': column}, ignore_index=True)
 
     def compare_column(self, col1, col2):
         col_diff = None
@@ -301,6 +311,7 @@ class Compare:
                 self.diff[right_col] = col2
                 self.diff[diff_col] = diff
                 self.mtdt_df = self.mtdt_df.append({'column': column,
+                                                    'column_present': 'both',
                                                     'left_column': left_col,
                                                     'right_column': right_col,
                                                     'diff_column': diff_col},
@@ -309,15 +320,22 @@ class Compare:
             else:
                 logging.info("%s column equals %s column", left_col, right_col)
         self.diff_rows.index = self.comd_df.index
-        if not self.ignore_extra_columns:
+
+        # replace nan in unique rows diff columns with boolean True, np.nan
+        # to represent no diffs
+        self.diff['rows_present'] = self.comd_df.loc[:, 'rows_present']
+        missing_rows_diff = self._missing_rows.loc[:, self.diff.columns]
+        for column in self.mtdt_df['diff_column']:
+            missing_rows_diff[column] = Constants.DIFF_TRUE
+        self.diff = self.diff.append(missing_rows_diff)
+
+        if (self.left_unq_columns or self.right_unq_columns) and \
+                not self.ignore_extra_columns:
             if self.left_unq_columns:
                 self._extra_columns(self.lsuffix, self.left_unq_columns)
             if self.right_unq_columns:
                 self._extra_columns(self.rsuffix, self.right_unq_columns)
-        # TODO: Add missing rows to diff dataframe
-        if self.left_unq_columns or self.right_unq_columns:
-            self.diff['rows_present'] = self.comd_df.loc[:, 'rows_present']
-            self.diff = self.diff.append(self._missing_rows.loc[:, self.diff.columns], )
+
         self.mtdt_df.set_index('column', inplace=True)
         # Remove the rows where there is no diffs
         rows_without_diff = ~self.diff_rows.apply(any, axis=1)
@@ -325,5 +343,9 @@ class Compare:
 
     # TODO: Add code block to the dummy method to save diff and metadata results
     #  to a sqlite db
-    def save_output(self, output_path):
-        pass
+    def save_output(self, output_path, output_file):
+        if os.path.exists(output_path):
+            db = os.path.join(output_path, 'diff.db')
+            engine = create_engine(f'sqlite:///{db}')
+            self.diff.to_sql('diff', con=engine)
+            self.mtdt_df.to_sql('diff_metadata', con=engine)

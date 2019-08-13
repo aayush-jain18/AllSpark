@@ -1,12 +1,12 @@
 <a href="https://github.com/aayush-jain18/AllSpark"><img src="docs/image/allspark.png" height="60px" /></a>
 =========================================================================================================================================
-AllSpark is a cli and api ready diff tool to compare differences between two structured datasets.
+AllSpark is a CLI and API ready data comparison tool to get differences between two structured datasets of same or different file format.
 
 AllSpark lets you:
 
   - Compare structured datasets various formats
-  - Compare descriptive statistic between datasets
-  - Test your ETL flows 
+  - Compare descriptive statistic differences between datasets
+  - Test your ETL flows output
  
  ## Getting Started
 
@@ -39,12 +39,12 @@ stated in [requirements.txt](requirements.txt)
 
 ## Built With
 
-* [Pandas](https://pandas.pydata.org/) - Data structures and Data analysis tools for the Python
-* [NumPy](https://www.numpy.org/) - Data structures and Data analysis tools for the Python
+- [Pandas](https://pandas.pydata.org/) - Data structures and Data analysis tools for the Python
+- [NumPy](https://www.numpy.org/) - Data structures and Data analysis tools for the Python
 
 ## Authors
 
-* **Aayush Jain** - *Author* - 
+- **Aayush Jain** - *Author* - 
 
 ## License
 
