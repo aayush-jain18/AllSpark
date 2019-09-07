@@ -67,6 +67,9 @@ class Compare:
         elif isinstance(key_columns, list):
             self.key_columns = key_columns
             self.on_index = False
+        elif isinstance(key_columns, tuple):
+            self.key_columns = list(key_columns)
+            self.on_index = False
 
         # TODO: Add method for duplicate keys
         # if if_dupes in Constants.duplicate_strategy:
@@ -110,10 +113,12 @@ class Compare:
         self._right = right
         self._validate_dataframe("right")
 
-    def _validate_dataframe(self, dataframe):
+    def _validate_dataframe(self, index):
         """
         """
-        pass
+        dataframe = getattr(self, index)
+        if not isinstance(dataframe, pd.DataFrame):
+            raise TypeError("{} must be a pandas DataFrame".format(index))
 
     @property
     def left_unq_columns(self):
@@ -133,9 +138,6 @@ class Compare:
         The join is done on columns or indexes. If joining columns on
         columns, the DataFrame indexes *will be ignored*.
         """
-        if self.left.equals(self.right):
-            logging.info("left dataset equals right dataset, skipping compare")
-            return None
         if self.key_columns:
             logging.info("Merging dataframes for comparison, on basis of "
                          f"key columns :{self.key_columns}")
@@ -159,10 +161,11 @@ class Compare:
         if self.key_columns:
             duplicate_keys = any(self.left[[self.key_columns]].duplicated() |
                                  self.right[self.key_columns].duplicated())
+            return duplicate_keys
         elif self.on_index:
             duplicate_keys = any(self.left.index.duplicated() |
                                  self.right.index.duplicated())
-        return duplicate_keys
+            return duplicate_keys
 
     @staticmethod
     def get_diff_row(diff):
@@ -294,10 +297,12 @@ class Compare:
     #  metadata dataframe(mtdt_df)
     def _compare(self):
         self.diff_rows = pd.DataFrame()
-        self.comd_df = self._merge_dataframe()
-
-        if self.comd_df is None:
+        if self.left.equals(self.right):
+            logging.info("left dataset equals right dataset, skipping compare")
+            self.diff = None
             return None
+
+        self.comd_df = self._merge_dataframe()
 
         for column in self.common_columns():
             left_col = column + self.lsuffix
@@ -349,3 +354,4 @@ class Compare:
             engine = create_engine(f'sqlite:///{db}')
             self.diff.to_sql('diff', con=engine)
             self.mtdt_df.to_sql('diff_metadata', con=engine)
+

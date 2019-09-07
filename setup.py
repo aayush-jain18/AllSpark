@@ -14,7 +14,7 @@ def version():
         for line in ver.readlines():
             if line.startswith('version ='):
                 return line.split(' = ')[-1].strip()[1:-1]
-    raise ValueError('No version found in AllSpark/version.py')
+    raise ValueError('No version found in AllSpark/__version__.py')
 
 
 def read(fname):
@@ -34,11 +34,11 @@ with open(path.join(pwd, 'README.md'), encoding='utf-8') as f:
 setup(
     name='AllSpark',
     version=version(),
-    description='AllSpark is a cli and api ready diff tool to compare differences '
-                'between two structured datasets.',
+    description='AllSpark is a CLI and API ready diff tool to compare '
+                + 'differences between two structured datasets.',
     author='Aayush Jain',
     author_email='aayushj1811@gmail.com',
-    license='BSD',
+    license='GNU v3.0',
     # Note that this is a string of words separated by whitespace, not a list.
     keywords='pandas ETL',
     long_description=long_description,
@@ -46,12 +46,13 @@ setup(
     url='https://github.com/aayush-jain18/AllSpark',
     packages=['AllSpark'],
     install_requires=read_reqs('requirements.txt'),
-    entry_points={'console_scripts': ['AllSpark = AllSpark.cli:AllSpark']},
+    # entry_points={'console_scripts': ['papermill = papermill.cli:papermill']},
+    entry_points={'console_scripts': ['allspark = AllSpark.cli:allspark']},
     classifiers=[
         'Intended Audience :: Developers',
         'Intended Audience :: Data Engineers',
         'Intended Audience :: Science/Research',
-        'License :: OSI Approved :: BSD License',
+        'License :: OSI Approved :: GNU General Public License v3.0',
         'Programming Language :: Python',
     ],
 )
