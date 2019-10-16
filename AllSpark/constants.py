@@ -7,4 +7,3 @@ class Constants:
                         'diff_count']
     DIFF_TRUE = 'AllSpark.Compare.True'
 
-

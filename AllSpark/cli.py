@@ -1,8 +1,9 @@
 import logging
 
 import pandas as pd
-
 import click
+from sqlalchemy import create_engine
+
 from AllSpark.core.pd_compare import Compare
 from AllSpark.constants import Constants
 
@@ -41,13 +42,14 @@ def allspark():
 @click.option('--rtol',
               help='',
               type=float, default=0)
+@click.option('-db', '--database', help='', type.click.Choice(['sqlite', 'postgres', 'mysql', 'oracle']))
 def pandas_compare(left_file, right_file, key_column, output, ltype, rtype,
-                   atol, rtol):
+                   atol, rtol, db):
+    """Compare two pandas dataframe and stores the diff report in Database"""
     left = pd.read_csv(left_file)
     right = pd.read_csv(right_file)
     diff = Compare(left=left, right=right, key_columns=key_column, atol=atol, rtol=rtol)
-    print(diff.diff)
-
+    diff.save_report()
 
 @allspark.command('spark-compare')
 @click.option('-l', '--left_file', help='',
@@ -67,6 +69,3 @@ def pandas_compare(left_file, right_file, key_column, output, ltype, rtype,
 @click.option('--rtol', type=float)
 def spark_compare(left_file, right_file, key_column, output, ltype, rtype, atol, rtol):
     raise NotImplementedError
-# @click.option('--progress-bar/--no-progress-bar',
-# @click.option('--progress-bar/--no-progress-bar',
-#              default=None, help="Flag for turning on the progress bar.")

@@ -36,7 +36,7 @@ class Compare:
         Suffix to use from right frame's overlapping columns.
     dsuffix : str, default '_right'
         Suffix to use for the compare result columns.
-    if_duplicate_key:
+    if_duplicate_keys:
     if_duplicate_rows:
     Attributes
     ----------
@@ -53,7 +53,7 @@ class Compare:
                  rsuffix='_right',
                  dsuffix='_diff',
                  compare='loose',
-                 if_duplicate_key='drop',
+                 if_duplicate_keys='drop',
                  if_duplicate_rows=None,
                  ignore_extra_columns=False,):
 
@@ -72,10 +72,10 @@ class Compare:
             self.on_index = False
 
         # TODO: Add method for duplicate keys
-        # if if_dupes in Constants.duplicate_strategy:
-        #     self._if_dupes = if_dupes
-        # else:
-        #     raise ValueError(f"{if_dupes} not a valid strategy")
+        if if_duplicate_keys in Constants.IF_DUPLICATE_KEY_METHODS:
+            self._if_dupes = if_duplicate_keys
+        else:
+            raise ValueError(f"{if_duplicate_keys} not a valid strategy")
 
         self.left = left
         self.right = right
@@ -85,7 +85,7 @@ class Compare:
         self.atol = atol
         self.rtol = rtol
         self.ignore_extra_columns = ignore_extra_columns
-        self._dupes = False
+        self._dups = self.check_duplicate_keys()
         self.diff = pd.DataFrame()
         self.comd_df = pd.DataFrame()
         self.mtdt_df = pd.DataFrame(columns=Constants.METADATA_COLUMNS)
@@ -118,7 +118,31 @@ class Compare:
         """
         dataframe = getattr(self, index)
         if not isinstance(dataframe, pd.DataFrame):
-            raise TypeError("{} must be a pandas DataFrame".format(index))
+            raise TypeError(f"{index} must be a pandas DataFrame")
+
+        # check if the key columns exist in dataframe
+        if not set(self.key_columns).issubset(set(dataframe.columns)):
+            raise ValueError(f"{index} must have all columns from key columns")
+
+    # TODO: check when enabling on_index
+    def check_duplicate_keys(self):
+        if self.key_columns:
+            dups = any(self.left[self.key_columns].duplicated() | self.right[self.key_columns].duplicated())
+            return dups
+        elif self.on_index:
+            dups = any(self.left.index.duplicated() |
+                       self.right.index.duplicated())
+            return dups
+
+    def handle_duplicate_keys(self, df):
+        if self._if_dupes == 'drop':
+            return df.loc[~df.index.duplicated(keep='first')]
+        elif self._if_dupes == 'sort':
+            df['sort_key'] = np.arange(len(df))
+            self.key_columns.append('sort_key')
+            return df.set_index('sort_key', append=True)
+        elif self._if_dupes == 'aggregate':
+            pass
 
     @property
     def left_unq_columns(self):
@@ -144,7 +168,8 @@ class Compare:
             df = pd.merge(self.left, self.right, how='outer', sort=True,
                           on=self.key_columns, indicator='rows_present',
                           suffixes=(self.lsuffix, self.rsuffix)).set_index(self.key_columns)
-            self._missing_rows = df[df['rows_present'].isin(['left_only', 'right_only'])].copy()
+            self._missing_rows = df[df['rows_present'].isin(['left_only',
+                                                             'right_only'])].copy()
             # Drop missing rows and extra column
             df.drop(self._missing_rows.index, inplace=True)
             return df
@@ -153,19 +178,10 @@ class Compare:
             df = pd.merge(self.left, self.right, how='outer', sort=True,
                           left_index=True, right_index=True,
                           indicator=True, suffixes=(self.lsuffix, self.rsuffix))
-            self._missing_rows = df[df['rows_present'].isin(['left_only', 'right_only'])].copy()
+            self._missing_rows = df[df['rows_present'].isin(['left_only',
+                                                             'right_only'])].copy()
             df.drop(self._missing_rows.index, inplace=True)
             return df
-
-    def if_duplicate_keys(self):
-        if self.key_columns:
-            duplicate_keys = any(self.left[[self.key_columns]].duplicated() |
-                                 self.right[self.key_columns].duplicated())
-            return duplicate_keys
-        elif self.on_index:
-            duplicate_keys = any(self.left.index.duplicated() |
-                                 self.right.index.duplicated())
-            return duplicate_keys
 
     @staticmethod
     def get_diff_row(diff):
@@ -174,7 +190,8 @@ class Compare:
     @staticmethod
     def count_notna(col):
         """
-        Return the count of not null values in a pd.Series or a column in pd.DataFrame.
+        Return the count of not null values in a pd.Series or a column in
+        pd.DataFrame.
 
         Parameters
         ----------
@@ -282,7 +299,8 @@ class Compare:
         col_diff = None
         if_diff_in_col = not col1.equals(col2)
         if if_diff_in_col:
-            if np.issubdtype(col1.dtype, np.number) and np.issubdtype(col2.dtype, np.number):
+            if np.issubdtype(col1.dtype, np.number) and \
+                    np.issubdtype(col2.dtype, np.number):
                 col_diff = self.compare_numeric_columns(col1, col2)
             elif col1.dtype.kind == 'M' and col2.dtype.kind == 'M':
                 col_diff = self.compare_timeseries_column(col1, col2)
@@ -290,9 +308,6 @@ class Compare:
                 col_diff = self.compare_object_columns(col1, col2)
         return col_diff
 
-    # FIXME: comparison results to nan if either value is nan, diff is missed
-    #  in the case, use fillna method or check nan in either column before
-    #  comparison
     # TODO: Add entries for column left_count, right_count, diff_count in
     #  metadata dataframe(mtdt_df)
     def _compare(self):
@@ -301,7 +316,11 @@ class Compare:
             logging.info("left dataset equals right dataset, skipping compare")
             self.diff = None
             return None
+        if self._dups:
+            self.left = self.handle_duplicate_keys(self.left)
+            self.right = self.handle_duplicate_keys(self.right)
 
+        # merge the left and right dataframes for comparison
         self.comd_df = self._merge_dataframe()
 
         for column in self.common_columns():
@@ -341,17 +360,32 @@ class Compare:
             if self.right_unq_columns:
                 self._extra_columns(self.rsuffix, self.right_unq_columns)
 
-        self.mtdt_df.set_index('column', inplace=True)
         # Remove the rows where there is no diffs
         rows_without_diff = ~self.diff_rows.apply(any, axis=1)
         self.diff.drop(self.diff_rows[rows_without_diff].index, inplace=True)
+        self.mtdt_df.set_index('column', inplace=True)
+        for column in self.mtdt_df.index:
+            if self.mtdt_df.loc[column, 'column_present'] == 'both':
+                self.mtdt_df.loc[column, 'diff_count'] = self.count_notna(
+                    self.diff[column + self.dsuffix])
+                self.mtdt_df.loc[column, 'left_count'] = self.count_notna(
+                    self.comd_df[column + self.lsuffix])
+                self.mtdt_df.loc[column, 'right_count'] = self.count_notna(
+                    self.comd_df[column + self.rsuffix])
+            elif self.mtdt_df.loc[column, 'column_present'] == self.lsuffix:
+                self.mtdt_df.loc[column, 'right_count'] = 0
+                self.mtdt_df.loc[column, 'left_count'] = self.count_notna(
+                    self.comd_df[column])
+                self.mtdt_df.loc[column, 'diff_count'] = self.count_notna(
+                    self.comd_df[column])
+            elif self.mtdt_df.loc[column, 'column_present'] == self.rsuffix:
+                self.mtdt_df.loc[column, 'left_count'] = 0
+                self.mtdt_df.loc[column, 'right_count'] = self.count_notna(
+                    self.comd_df[column])
+                self.mtdt_df.loc[column, 'diff_count'] = self.count_notna(
+                    self.comd_df[column])
 
-    # TODO: Add code block to the dummy method to save diff and metadata results
-    #  to a sqlite db
-    def save_output(self, output_path, output_file):
-        if os.path.exists(output_path):
-            db = os.path.join(output_path, 'diff.db')
-            engine = create_engine(f'sqlite:///{db}')
-            self.diff.to_sql('diff', con=engine)
-            self.mtdt_df.to_sql('diff_metadata', con=engine)
+    def save_output(self, engine):
+        self.diff.to_sql('diff', con=engine)
+        self.mtdt_df.to_sql('diff_metadata', con=engine)
 
