@@ -8,6 +8,10 @@ AllSpark lets you:
   - Compare descriptive statistic differences between datasets
   - Test your ETL flows output
  
+ ## Disclaimer
+
+AllSpark is in early stages of development and under constant change, so bugs and issues are expected. We count on your support to find, review and report them!
+ 
  ## Getting Started
 
 These instructions will get you a copy of the project up and running on your 
