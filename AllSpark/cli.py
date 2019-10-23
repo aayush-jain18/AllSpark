@@ -1,4 +1,5 @@
 import logging
+from time import perf_counter
 
 import pandas as pd
 import click
@@ -42,14 +43,17 @@ def allspark():
 @click.option('--rtol',
               help='',
               type=float, default=0)
-@click.option('-db', '--database', help='', type.click.Choice(['sqlite', 'postgres', 'mysql', 'oracle']))
+@click.option('-db', '--database', type=click.Choice(['sqlite', 'postgres', 'mysql', 'oracle']))
 def pandas_compare(left_file, right_file, key_column, output, ltype, rtype,
-                   atol, rtol, db):
+                   atol, rtol, database):
     """Compare two pandas dataframe and stores the diff report in Database"""
+    start_time = perf_counter()
     left = pd.read_csv(left_file)
     right = pd.read_csv(right_file)
     diff = Compare(left=left, right=right, key_columns=key_column, atol=atol, rtol=rtol)
-    diff.save_report()
+    end_time = perf_counter()
+    print(end_time - start_time)
+
 
 @allspark.command('spark-compare')
 @click.option('-l', '--left_file', help='',
@@ -69,3 +73,6 @@ def pandas_compare(left_file, right_file, key_column, output, ltype, rtype,
 @click.option('--rtol', type=float)
 def spark_compare(left_file, right_file, key_column, output, ltype, rtype, atol, rtol):
     raise NotImplementedError
+
+
+# pip install inherits -i http://infynp/repository/pypi-all/
