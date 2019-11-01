@@ -227,7 +227,20 @@ class Compare:
         -------
         timedelta series
         """
-        return col1 - col2
+
+        diff = np.full(col2.size, np.nan, dtype='O')
+        for index, row in enumerate(zip(col1, col2)):
+            if row[0] != row[1]:
+                val1 = row[0]
+                val2 = row[1]
+                if ~(pd.isnull(val1) and pd.isnull(val2)):
+                    timedelta = (val1 - val2)
+                    timedelta = Constants.DIFF_TRUE if pd.isnull(timedelta) \
+                        else timedelta.total_seconds()
+            else:
+                timedelta = np.nan
+            diff[index] = timedelta
+        return pd.Series(diff, index=col1.index)
 
     @staticmethod
     def compare_object_columns(col1, col2, atol, rtol):
@@ -255,7 +268,7 @@ class Compare:
                     if ~(np.isnan(val1) and np.isnan(val2)):
                         if ~np.isclose(val1, val2, atol=atol, rtol=rtol):
                             float_diff = (val1 - val2)
-                            float_diff = Constants.DIFF_TRUE if np.isnan(float_diff) else float_diff
+                            float_diff = Constants.DIFF_TRUE if pd.isnull(float_diff) else float_diff
                         else:
                             float_diff = np.nan
                         diff[index] = float_diff
@@ -293,7 +306,7 @@ class Compare:
             for index, x_equals_y in if_num_diff.iteritems():
                 if x_equals_y:
                     diff[index] = np.nan
-                elif np.isnan(col1[index]) | np.isnan(col2[index]):
+                elif pd.isnull(col1[index]) | pd.isnull(col2[index]):
                     diff[index] = Constants.DIFF_TRUE
                 else:
                     diff[index] = col1[index] - col2[index]
@@ -321,9 +334,9 @@ class Compare:
             self.metadata = self.metadata.append({'column': column,
                                                   'column_present': 'both',
                                                   'left_column': self.column_mapping[column]['left'],
-                                                  'left_count': column_count[self.column_mapping[column]['left']],
+                                                  'left_count': self.count_notna(self.merge_df[self.column_mapping[column]['left']]),
                                                   'right_column': self.column_mapping[column]['right'],
-                                                  'right_count': column_count[self.column_mapping[column]['right']],
+                                                  'right_count': self.count_notna(self.merge_df[self.column_mapping[column]['right']]),
                                                   'diff_column': self.column_mapping[column]['diff'],
                                                   'diff_count': column_count[self.column_mapping[column]['diff']]
                                                   },
@@ -434,14 +447,14 @@ class Compare:
         """
 
         if value == Constants.DIFF_TRUE:
-            color = 'grey'
+            color = r'#D5D8DC'
         elif value < 0:
-            color = 'red'
+            color = r'#EC7063'
         elif value > 0:
-            color = 'green'
+            color = r'#58D68D'
         else:
-            color = 'black'
-        return 'color: %s' % color
+            color = ''
+        return 'background-color: %s' % color
 
     @staticmethod
     def hover(hover_color="#AED6F1"):
@@ -468,7 +481,8 @@ class Compare:
         #    dict(selector="td", props=td_props)
         ]
         return (self.diff.style
-                .applymap(Compare.color_diff_cells, subset=self.metadata['diff_column'].to_list())
-                .set_caption('This is a custom caption.')
+                .applymap(Compare.color_diff_cells,
+                          subset=self.metadata['diff_column'].to_list())
+                .set_caption('Source VS Target')
                 .set_table_styles(styles))
 
