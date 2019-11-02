@@ -73,6 +73,3 @@ def pandas_compare(left_file, right_file, key_column, output, ltype, rtype,
 @click.option('--rtol', type=float)
 def spark_compare(left_file, right_file, key_column, output, ltype, rtype, atol, rtol):
     raise NotImplementedError
-
-
-# pip install inherits -i http://infynp/repository/pypi-all/
