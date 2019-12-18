@@ -46,7 +46,6 @@ setup(
     url='https://github.com/aayush-jain18/AllSpark',
     packages=['AllSpark'],
     install_requires=read_reqs('requirements.txt'),
-    # entry_points={'console_scripts': ['papermill = papermill.cli:papermill']},
     entry_points={'console_scripts': ['allspark = AllSpark.cli:allspark']},
     classifiers=[
         'Intended Audience :: Developers',
